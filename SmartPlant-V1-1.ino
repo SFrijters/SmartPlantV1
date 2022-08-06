@@ -1,9 +1,9 @@
-/*  
+/*
  *   Smart Plant Pot by Lewis at DIY Machines
- *   
+ *
  *   Find the build instructions and CAD data here: https://youtu.be/T_tpKoNCVYw
  *   My Youtube channel: www.youtube.com/c/diymachines
- *   
+ *
  *   List of items used in this project and where to find them (the links are Amazon affiliate links and help support this channel at no cost to you):
 
 ■ Arduino Nano: https://geni.us/ArduinoNanoV3
@@ -22,84 +22,170 @@
 ■ Battery powered glue gun: http://geni.us/BoschBatteryGlueGun
 ■ Battery powered soldering iron: http://bit.ly/SealeySDL6
 
+
+ * Modified by @SFrijters for use with a different soil moisture sensor and make the code more chatty.
  */
 
 // These constants won't change. They're used to give names to the pins used:
-const int ledPin = 2;                                             // Digital output pin that the LED is attached to
-const int pumpPin = 12;                                           // Digital output pin that the water pump is attached to
-const int waterLevelPin = A3;                                      // Analoge pin water level sensor is connected to
-const int moistureSensorPin = 7;                                  // Digital input pin used to check the moisture level of the soil
+const int ledPin = 2;                              // Digital output pin that the LED is attached to
+const int pumpPin = 12;                            // Digital output pin that the water pump is attached to
+const int waterLevelPin = A3;                      // Analog pin water level sensor is connected to
+const int moistureSensorPin = A0;                  // Analog input pin used to check the moisture level of the soil
 
+// Startup
+const int timesStartupFlash = 5;                   // How often the LED will flash at startup
+const long timeStartupFlash_ms = 600;              // How long a LED flash cycle at startup lasts
 
-// These are the values to edit - see the instructional video to find out what needs adjusting and why:
+// Water level and LED
+const int waterLevelSensorMinValue = 30;           // The value that the water level sensor returns when it is (almost) dry - at least no longer submerged but maybe still drying in the air
+const int waterLevelSensorMaxValue = 133;          // The value that the water level sensor returns when it is fully submerged
+const int waterLevelWarningPercentThreshold = 25;  // Threshold at which we flash the LED to warn you of a low water level in the pump tank
+const int waterLevelStopPumpPercentThreshold = 5;  // Threshold at which we stop trying to pump water
+const int timesWaterLevelWarningFlash = 5;         // How often the LED will flash to tell us the water tank needs topping up
+const long timeWaterLevelWarningFlash_ms = 2000;   // How long a LED flash cycle to warn about an empty reservoir lasts
+const int timesWaterLevelStopPumpFlash = 5;        // How often the LED will flash to tell us the water tank needs topping up
+const long timeWaterLevelStopPumpFlash_ms = 200;   // How long a LED flash cycle to warn about an empty reservoir lasts
 
-double checkInterval = 1800;                                      //time to wait before checking the soil moisture level - default it to an hour = 1800000
-int waterLevelThreshold = 380;                                    // threshold at which we flash the LED to warn you of a low water level in the pump tank - set this as per the video explains
-int emptyReservoirTimer = 90;                                     // how long the LED will flash to tell us the water tank needs topping up - default it to 900 = 30mins
-int amountToPump = 300;                                           // how long the pump should pump water for when the plant needs it
+// Soil moisture and pump
+const int moistureSensorAirValue = 450;            // When it is dried and held in air, it's the mininum moisture
+const int moistureSensorWaterValue = 120;          // When it is submerged in water, it's the maximum moisture
+const int moistureSoilPercentThreshold = 5;        // At which soil moisture percentage the pump should be activated
+const long timeToPump_ms = 2500;                   // How long the pump should pump water for when the plant needs it
+const long timeToAllowMoistureSpread_ms = 2000;    // How long moisture is allowed to spread in the soil after pumping
 
-// Global temp values
+// Sleeping
+const long checkInterval_ms = 10000;               // Time to wait after a cycle
 
-int sensorWaterLevelValue = 0;                                      // somewhere to store the value read from the waterlevel sensor
-int moistureSensorValue = 0;                                       //somewhere to store the value read from the soil moisture sensor
-  
 void setup() {
-  // put your setup code here, to run once:
-    Serial.begin(9600);  
+    // Set the BAUD rate
+    Serial.begin(9600);
+
+    Serial.println("Starting up");
+
+    // Set the operational mode for the digital pins
     pinMode(ledPin, OUTPUT);
     pinMode(pumpPin, OUTPUT);
     pinMode(moistureSensorPin, INPUT);
 
-                                                                  //flash the LED five times to confirm power on and operation of code:
-     for (int i=0; i <= 4; i++){
-        digitalWrite(ledPin, HIGH);
-        delay(300);
-        digitalWrite(ledPin, LOW);
-        delay(300);
-      }
-      delay(2000);
+    Serial.println("Pins set");
 
-    digitalWrite(ledPin, HIGH);                                   // turn the LED on 
+    // Flash the LED five times to confirm power on and operation of code:
+    for (int i = 0; i < timesStartupFlash; i++) {
+        digitalWrite(ledPin, HIGH);
+        delay(timeStartupFlash_ms / 2);
+        digitalWrite(ledPin, LOW);
+        delay(timeStartupFlash_ms / 2);
+    }
+
+    // Turn the LED on
+    digitalWrite(ledPin, HIGH);
+
+    Serial.println("Startup done");
 }
 
 void loop() {
-  // put your main code here, to run repeatedly:
-  
-  sensorWaterLevelValue = analogRead(waterLevelPin);              //read the value of the water level sensor
-  Serial.print("Water level sensor value: ");                     //print it to the serial monitor
-  Serial.println(sensorWaterLevelValue);
+    int waterLevelSensorValue = 0;  // Somewhere to store the value read from the waterlevel sensor
+    int waterLevelPercent = 0;
+    int moistureSensorValue = 0;    // Somewhere to store the value read from the soil moisture sensor
+    int moistureSoilPercent = 0;
 
-  if (sensorWaterLevelValue < waterLevelThreshold){               //check if we need to alert you to a low water level in the tank
-      for (int i=0; i <= emptyReservoirTimer; i++){  
-        digitalWrite(ledPin, LOW);
-        delay(1000);
-        digitalWrite(ledPin, HIGH);
-        delay(1000);
-      }
-  }
-  else {
-    digitalWrite(ledPin, HIGH);
-    delay(checkInterval);                                         //wait before checking the soil moisture level
-  }
+    // Interact with water level sensor and LED
+    Serial.println("Reading water level");
+    waterLevelSensorValue = analogRead(waterLevelPin);
+    waterLevelPercent = map(waterLevelSensorValue,
+                            waterLevelSensorMinValue, waterLevelSensorMaxValue,
+                            0, 100);
 
+    // Set waterLevelPercent to minimum 0% and maximum 100%
+    if (waterLevelPercent > 100) {
+        waterLevelPercent = 100;
+    } else if (waterLevelPercent < 0) {
+        waterLevelPercent = 0;
+    }
 
-// check soil moisture level
+    Serial.print("  Water level sensor value: ");
+    Serial.print(waterLevelSensorValue);
+    Serial.print(" -> ");
+    Serial.print(waterLevelPercent);
+    Serial.print("%");
 
-      moistureSensorValue = digitalRead(moistureSensorPin);       //read the moisture sensor and save the value
-      Serial.print("Soil moisture sensor is currently: ");
-      Serial.print(moistureSensorValue);
-      Serial.println(" ('1' means soil is too dry and '0' means the soil is moist enough.)");
+    if (waterLevelPercent < waterLevelStopPumpPercentThreshold) {
+        Serial.print(" < ");
+        Serial.print(waterLevelStopPumpPercentThreshold);
+        Serial.println("%");
+        Serial.println("  Water level too low, refusing to pump, blinking to get your attention");
+        for (int i = 0; i < timesWaterLevelStopPumpFlash; i++) {
+            digitalWrite(ledPin, LOW);
+            delay(timeWaterLevelStopPumpFlash_ms / 2);
+            digitalWrite(ledPin, HIGH);
+            delay(timeWaterLevelStopPumpFlash_ms / 2);
+        }
+        return;
+    }
 
-      if (moistureSensorValue == 1){
-                                                                 //pulse the pump 
+    if (waterLevelPercent < waterLevelWarningPercentThreshold) {
+        Serial.print(" < ");
+        Serial.print(waterLevelWarningPercentThreshold);
+        Serial.println("%");
+        Serial.println("  Water level getting low, blinking to get your attention");
+        for (int i = 0; i < timesWaterLevelWarningFlash; i++) {
+            digitalWrite(ledPin, LOW);
+            delay(timeWaterLevelWarningFlash_ms / 2);
+            digitalWrite(ledPin, HIGH);
+            delay(timeWaterLevelWarningFlash_ms / 2);
+        }
+    } else {
+        Serial.print(" > ");
+        Serial.print(waterLevelWarningPercentThreshold);
+        Serial.println("%");
+        Serial.println("  Water level okay");
+    }
+
+    // Interact with moisture level sensor and pump
+    Serial.println("Reading moisture level");
+    moistureSensorValue = analogRead(moistureSensorPin);
+    moistureSoilPercent = map(moistureSensorValue,
+                              moistureSensorAirValue, moistureSensorWaterValue,
+                              0, 100);
+    // Set moistureSoilPercent to minimum 0% and maximum 100%
+    if (moistureSoilPercent > 100) {
+        moistureSoilPercent = 100;
+    } else if (moistureSoilPercent < 0) {
+        moistureSoilPercent = 0;
+    }
+
+    Serial.print("  Moisture sensor value: ");
+    Serial.print(moistureSensorValue);
+    Serial.print(" -> ");
+    Serial.print(moistureSoilPercent);
+    Serial.print("%");
+
+    // If the soil is too dry, activate the pump
+    if (moistureSoilPercent < moistureSoilPercentThreshold) {
+        Serial.print(" < ");
+        Serial.print(moistureSoilPercentThreshold);
+        Serial.println("%");
         digitalWrite(pumpPin, HIGH);
-          Serial.println("pump on");
-        delay(amountToPump);                                      //keep pumping water
+        Serial.print("    Pumping for ");
+        Serial.print(timeToPump_ms);
+        Serial.println(" milliseconds");
+        delay(timeToPump_ms);
         digitalWrite(pumpPin, LOW);
-         Serial.println("pump off");
-        delay(800);                                              //delay to allow the moisture in the soil to spread through to the sensor
-      }
+        Serial.println("    Done pumping");
 
+        // Delay to allow the moisture in the soil to spread through to the sensor
+        Serial.print("    Waiting for moisture to spread for ");
+        Serial.print(timeToAllowMoistureSpread_ms);
+        Serial.println(" milliseconds");
+        delay(timeToAllowMoistureSpread_ms);
+    } else {
+        Serial.print(" > ");
+        Serial.print(moistureSoilPercentThreshold);
+        Serial.println("%");
+    }
 
-
+    Serial.print("Sleeping for ");
+    Serial.print(checkInterval_ms);
+    Serial.println(" milliseconds");
+    delay(checkInterval_ms);
 }
