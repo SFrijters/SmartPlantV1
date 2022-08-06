@@ -24,6 +24,8 @@
 
 
  * Modified by @SFrijters for use with a different soil moisture sensor and make the code more chatty.
+ *
+ * Moisture sensor: https://www.az-delivery.de/nl/products/bodenfeuchte-sensor-modul-v1-2
  */
 
 // These constants won't change. They're used to give names to the pins used:
@@ -47,14 +49,31 @@ const int timesWaterLevelStopPumpFlash = 5;        // How often the LED will fla
 const long timeWaterLevelStopPumpFlash_ms = 200;   // How long a LED flash cycle to warn about an empty reservoir lasts
 
 // Soil moisture and pump
-const int moistureSensorAirValue = 450;            // When it is dried and held in air, it's the mininum moisture
+const int moistureSensorAirValue = 450;            // When it is dried and held in air, it's the minimum moisture
 const int moistureSensorWaterValue = 120;          // When it is submerged in water, it's the maximum moisture
 const int moistureSoilPercentThreshold = 5;        // At which soil moisture percentage the pump should be activated
 const long timeToPump_ms = 2500;                   // How long the pump should pump water for when the plant needs it
 const long timeToAllowMoistureSpread_ms = 2000;    // How long moisture is allowed to spread in the soil after pumping
 
 // Sleeping
-const long checkInterval_ms = 10000;               // Time to wait after a cycle
+const unsigned long cycleInterval_ms = 36000000;   // Cycle is one hour
+const unsigned long sleepInterval_ms = 10000;      // Time to wait aftr checking the cycle is 10 seconds.
+
+int waterLevelSensorValue = 0;  // Somewhere to store the value read from the waterlevel sensor
+int waterLevelPercent = 0;
+int moistureSensorValue = 0;    // Somewhere to store the value read from the soil moisture sensor
+int moistureSoilPercent = 0;
+
+unsigned long lastMillis;
+
+typedef enum {
+  okState,
+  waterLevelLowState,
+  activeState,
+  nProgramStates,
+} programState;
+
+programState _programState = okState;
 
 void setup() {
     // Set the BAUD rate
@@ -62,10 +81,13 @@ void setup() {
 
     Serial.println("Starting up");
 
-    // Set the operational mode for the digital pins
+    // Set the operational mode for the pins
     pinMode(ledPin, OUTPUT);
     pinMode(pumpPin, OUTPUT);
+    pinMode(waterLevelPin, INPUT);
     pinMode(moistureSensorPin, INPUT);
+
+    lastMillis = millis();
 
     Serial.println("Pins set");
 
@@ -83,13 +105,7 @@ void setup() {
     Serial.println("Startup done");
 }
 
-void loop() {
-    int waterLevelSensorValue = 0;  // Somewhere to store the value read from the waterlevel sensor
-    int waterLevelPercent = 0;
-    int moistureSensorValue = 0;    // Somewhere to store the value read from the soil moisture sensor
-    int moistureSoilPercent = 0;
-
-    // Interact with water level sensor and LED
+void readWaterLevelPercent() {
     Serial.println("Reading water level");
     waterLevelSensorValue = analogRead(waterLevelPin);
     waterLevelPercent = map(waterLevelSensorValue,
@@ -108,40 +124,42 @@ void loop() {
     Serial.print(" -> ");
     Serial.print(waterLevelPercent);
     Serial.print("%");
+}
 
-    if (waterLevelPercent < waterLevelStopPumpPercentThreshold) {
-        Serial.print(" < ");
-        Serial.print(waterLevelStopPumpPercentThreshold);
-        Serial.println("%");
-        Serial.println("  Water level too low, refusing to pump, blinking to get your attention");
-        for (int i = 0; i < timesWaterLevelStopPumpFlash; i++) {
-            digitalWrite(ledPin, LOW);
-            delay(timeWaterLevelStopPumpFlash_ms / 2);
-            digitalWrite(ledPin, HIGH);
-            delay(timeWaterLevelStopPumpFlash_ms / 2);
-        }
-        return;
+void doWaterLevelStopPump() {
+    Serial.print(" < ");
+    Serial.print(waterLevelStopPumpPercentThreshold);
+    Serial.println("%");
+    Serial.println("  Water level too low, refusing to pump, blinking to get your attention");
+    for (int i = 0; i < timesWaterLevelStopPumpFlash; i++) {
+        digitalWrite(ledPin, LOW);
+        delay(timeWaterLevelStopPumpFlash_ms / 2);
+        digitalWrite(ledPin, HIGH);
+        delay(timeWaterLevelStopPumpFlash_ms / 2);
     }
+}
 
-    if (waterLevelPercent < waterLevelWarningPercentThreshold) {
-        Serial.print(" < ");
-        Serial.print(waterLevelWarningPercentThreshold);
-        Serial.println("%");
-        Serial.println("  Water level getting low, blinking to get your attention");
-        for (int i = 0; i < timesWaterLevelWarningFlash; i++) {
-            digitalWrite(ledPin, LOW);
-            delay(timeWaterLevelWarningFlash_ms / 2);
-            digitalWrite(ledPin, HIGH);
-            delay(timeWaterLevelWarningFlash_ms / 2);
-        }
-    } else {
-        Serial.print(" > ");
-        Serial.print(waterLevelWarningPercentThreshold);
-        Serial.println("%");
-        Serial.println("  Water level okay");
+void doWaterLevelWarning() {
+    Serial.print(" < ");
+    Serial.print(waterLevelWarningPercentThreshold);
+    Serial.println("%");
+    Serial.println("  Water level getting low, blinking to get your attention");
+    for (int i = 0; i < timesWaterLevelWarningFlash; i++) {
+        digitalWrite(ledPin, LOW);
+        delay(timeWaterLevelWarningFlash_ms / 2);
+        digitalWrite(ledPin, HIGH);
+        delay(timeWaterLevelWarningFlash_ms / 2);
     }
+}
 
-    // Interact with moisture level sensor and pump
+void doWaterLevelOk() {
+    Serial.print(" > ");
+    Serial.print(waterLevelWarningPercentThreshold);
+    Serial.println("%");
+    Serial.println("  Water level okay");
+}
+
+void readMoistureSoilPercent() {
     Serial.println("Reading moisture level");
     moistureSensorValue = analogRead(moistureSensorPin);
     moistureSoilPercent = map(moistureSensorValue,
@@ -159,33 +177,85 @@ void loop() {
     Serial.print(" -> ");
     Serial.print(moistureSoilPercent);
     Serial.print("%");
+}
+
+void doPumpWater() {
+    Serial.print(" < ");
+    Serial.print(moistureSoilPercentThreshold);
+    Serial.println("%");
+    digitalWrite(pumpPin, HIGH);
+    Serial.print("    Pumping for ");
+    Serial.print(timeToPump_ms);
+    Serial.println(" milliseconds");
+    delay(timeToPump_ms);
+    digitalWrite(pumpPin, LOW);
+    Serial.println("    Done pumping");
+
+    // Delay to allow the moisture in the soil to spread through to the sensor
+    Serial.print("    Waiting for moisture to spread for ");
+    Serial.print(timeToAllowMoistureSpread_ms);
+    Serial.println(" milliseconds");
+    delay(timeToAllowMoistureSpread_ms);
+}
+
+void doNotPumpWater() {
+    Serial.print(" > ");
+    Serial.print(moistureSoilPercentThreshold);
+    Serial.println("%");
+}
+
+void doThings() {
+    readWaterLevelPercent();
+
+    if (waterLevelPercent < waterLevelStopPumpPercentThreshold) {
+        doWaterLevelStopPump();
+        // Early return: we cannot act on anything if the water level is too low
+        return;
+    }
+
+    if (waterLevelPercent < waterLevelWarningPercentThreshold) {
+        doWaterLevelWarning();
+    } else {
+        doWaterLevelOk();
+    }
+
+    readMoistureSoilPercent();
 
     // If the soil is too dry, activate the pump
     if (moistureSoilPercent < moistureSoilPercentThreshold) {
-        Serial.print(" < ");
-        Serial.print(moistureSoilPercentThreshold);
-        Serial.println("%");
-        digitalWrite(pumpPin, HIGH);
-        Serial.print("    Pumping for ");
-        Serial.print(timeToPump_ms);
-        Serial.println(" milliseconds");
-        delay(timeToPump_ms);
-        digitalWrite(pumpPin, LOW);
-        Serial.println("    Done pumping");
-
-        // Delay to allow the moisture in the soil to spread through to the sensor
-        Serial.print("    Waiting for moisture to spread for ");
-        Serial.print(timeToAllowMoistureSpread_ms);
-        Serial.println(" milliseconds");
-        delay(timeToAllowMoistureSpread_ms);
+        doPumpWater();
     } else {
-        Serial.print(" > ");
-        Serial.print(moistureSoilPercentThreshold);
-        Serial.println("%");
+        doNotPumpWater();
+        if (waterLevelPercent < waterLevelWarningPercentThreshold) {
+            _programState = waterLevelLowState;
+        } else {
+            _programState = okState;
+        }
+    }
+}
+
+void loop() {
+    // Keep interacting with the pot until were are in a stable state
+    _programState = activeState;
+    while (_programState != okState) {
+        doThings();
     }
 
-    Serial.print("Sleeping for ");
-    Serial.print(checkInterval_ms);
-    Serial.println(" milliseconds");
-    delay(checkInterval_ms);
+    // If everything is (finally) okay, sleep for a while
+    // NOTE: This will overflow after ~50 days but I don't care.
+    // https://www.arduino.cc/reference/en/language/functions/time/millis/
+    while (millis() - lastMillis < cycleInterval_ms) {
+        Serial.print("Sleeping for ");
+        Serial.print(sleepInterval_ms);
+        Serial.println(" milliseconds");
+        delay(sleepInterval_ms);
+    }
+    lastMillis = millis();
 }
+
+// Local Variables:
+// mode: c
+// c-basic-offset: 4
+// c-file-style: "stroustrup"
+// indent-tabs-mode: nil
+// End:
