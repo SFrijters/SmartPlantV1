@@ -10,34 +10,36 @@ With an Arduino Nano at its core this project uses a water level sensor to let y
 
 List of items used in this project and where to find them (the links are Amazon affiliate links and help to support this channel at no cost to you):
 
-■ Arduino Nano: https://geni.us/ArduinoNanoV3
+- Arduino Nano: https://geni.us/ArduinoNanoV3
 
-■ Mini submersible pump: https://geni.us/MiniPump
+- Mini submersible pump: https://geni.us/MiniPump
 
-■ 5mm tubing: https://geni.us/5mmTubing
+- 5mm tubing: https://geni.us/5mmTubing
 
-■ Transistor: https://geni.us/2npn2222
+- Transistor: https://geni.us/2npn2222
 
-■ Resistors (1k and 4.7k): https://geni.us/Ufa2s
+- Resistors (1k and 4.7k): https://geni.us/Ufa2s
 
-■ Wire: https://geni.us/22AWGWire
+- Wire: https://geni.us/22AWGWire
 
-■ 3mm LED: https://geni.us/LEDs
+- 3mm LED: https://geni.us/LEDs
 
-■ Water level sensor: https://geni.us/WaterLevelSensor
+- Water level sensor: https://geni.us/WaterLevelSensor
 
-■ Nuts and Bolts: http://geni.us/NutsAndBolts
+- Nuts and Bolts: http://geni.us/NutsAndBolts
 
-■ Soil moisture sensor: https://geni.us/MoistureSensor
+- ~~Soil moisture sensor: [https://geni.us/MoistureSensor](https://geni.us/MoistureSensor)~~
 
-■ Half Perma-proto board: https://geni.us/HalfPermaProto
+- Soil moisture sensor https://www.az-delivery.de/nl/products/bodenfeuchte-sensor-modul-v1-2
 
-■ PLA Filament: https://geni.us/PLAFilament
+- Half Perma-proto board: https://geni.us/HalfPermaProto
+
+- PLA Filament: https://geni.us/PLAFilament
 
 
-■ Battery powered glue gun: http://geni.us/BoschBatteryGlueGun
+- Battery powered glue gun: http://geni.us/BoschBatteryGlueGun
 
-■ Battery powered soldering iron:  http://bit.ly/SealeySDL6 
+- Battery powered soldering iron:  http://bit.ly/SealeySDL6
 
 ==========
 
@@ -50,7 +52,7 @@ SAY THANKS:
 Buy me a coffee to say thanks: https://ko-fi.com/diymachines
 Support us on Patreon: https://www.patreon.com/diymachines
 
-SUBSCRIBE: 
+SUBSCRIBE:
 ■ https://www.youtube.com/channel/UC3jc4X-kEq-dEDYhQ8QoYnQ?sub_confirmation=1
 
 INSTAGRAM: https://www.instagram.com/diy_machines/?hl=en
