@@ -57,3 +57,28 @@ SUBSCRIBE:
 
 INSTAGRAM: https://www.instagram.com/diy_machines/?hl=en
 FACEBOOK: https://www.facebook.com/diymachines/
+
+
+## nix develop
+
+`nix develop` provides a semi-reproducible development environment: `arduino-cli` and other packages are pinned, but `arduino-cli` downloads its own packages.
+
+For NixOS: make sure the user is in the "dialout" group to access the serial port.
+
+```nix
+users.users.<user>.extraGroups = [ "dialout" ];
+```
+
+## arduino-cli
+
+Hints to compile / upload from command line: https://stackoverflow.com/questions/57429802/is-there-a-way-to-use-arduino-cli-to-compile-sketch-ino-to-a-bin-file
+
+```console
+$ arduino-cli board list
+$ arduino-cli board listall  # Get fqbn name from here
+$ arduino-cli compile --fqbn arduino:avr:nano SmartPlantV1
+$ arduino-cli upload -p /dev/ttyUSB0 --fqbn arduino:avr:nano SmartPlantV1
+$ screen /dev/ttyUSB0 9600  # Use the output from the 'list' command to determine the TTY, 9600 is set in the sketch
+```
+
+Alternatively, use `make` for some predefined options.
