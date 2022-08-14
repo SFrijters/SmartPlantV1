@@ -9,37 +9,36 @@
   outputs = { self, nixpkgs, flake-utils }:
     flake-utils.lib.eachSystem [ "x86_64-linux" ] (system:
       let
-        name = "arduino-SmartPlant-dev";
-
-        vendor = "arduino";
-        arch = "avr";
-        boardId = "nano";
-        fqbn = "${vendor}:${arch}:${boardId}";
+        name = "SmartPlantV1";
 
         pkgs = import nixpkgs {
           inherit system;
         };
 
         arduinoShellHookPaths = ''
-          export _ARDUINO_ROOT=$HOME/.${name}
+          if [ -z ''${XDG_CACHE_HOME:-} ]; then
+              export _ARDUINO_ROOT=$HOME/.arduino/${name}
+          else
+              export _ARDUINO_ROOT=$XDG_CACHE_HOME/arduino/${name}
+          fi
+          export _ARDUINO_PYTHON3=${pkgs.python3}
           export ARDUINO_DIRECTORIES_USER=$_ARDUINO_ROOT
           export ARDUINO_DIRECTORIES_DATA=$_ARDUINO_ROOT
           export ARDUINO_DIRECTORIES_DOWNLOADS=$_ARDUINO_ROOT/staging
-          export _ARDUINO_VENDOR=${vendor}
-          export _ARDUINO_ARCH=${arch}
-          export _ARDUINO_BOARDID=${boardId}
-          export _ARDUINO_FQBN=${fqbn}
-          export _ARDUINO_PROJECT_NAME=${name}
         '';
 
         devShellArduinoCLI =
           pkgs.mkShell ({
-            inherit name;
-            packages = [ pkgs.arduino-cli pkgs.gnumake ];
+            name = "${name}-dev";
+            packages = with pkgs; [
+              arduino-cli
+              git
+              gnumake
+              python3
+            ];
             shellHook = ''
               ${arduinoShellHookPaths}
               echo "==> Storing arduino-cli data in $_ARDUINO_ROOT"
-              arduino-cli core install ${vendor}:${arch}
             '';
           });
 

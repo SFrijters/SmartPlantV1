@@ -28,6 +28,12 @@
  * Moisture sensor: https://www.az-delivery.de/nl/products/bodenfeuchte-sensor-modul-v1-2
  */
 
+#ifdef GIT_VERSION
+#define PROVENANCE "git commit " GIT_VERSION
+#else
+#define PROVENANCE __FILE__
+#endif
+
 // These constants won't change. They're used to give names to the pins used:
 const int ledPin = 2;                              // Digital output pin that the LED is attached to
 const int pumpPin = 12;                            // Digital output pin that the water pump is attached to
@@ -79,6 +85,8 @@ void setup() {
     // Set the BAUD rate
     Serial.begin(9600);
 
+    Serial.print("Generated from ");
+    Serial.println(PROVENANCE);
     Serial.println("Starting up");
 
     // Set the operational mode for the pins
