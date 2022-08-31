@@ -29,9 +29,9 @@
  */
 
 #ifdef GIT_VERSION
-#define PROVENANCE "git commit " GIT_VERSION
+#define PROVENANCE "file '" __FILE__ "' at git commit " GIT_VERSION
 #else
-#define PROVENANCE __FILE__
+#define PROVENANCE "file '" __FILE__ "'"
 #endif
 
 // These constants won't change. They're used to give names to the pins used:
