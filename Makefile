@@ -3,7 +3,7 @@ SERIAL=/dev/ttyUSB0
 BAUDRATE=9600
 PROFILE=SmartPlantV1
 
-.PHONY: all
+.PHONY: all compile upload monitor
 
 all: compile upload
 
@@ -18,5 +18,5 @@ upload:
 	arduino-cli upload -v -p $(SERIAL) --profile $(PROFILE) || \
 	{ echo "==> $(SERIAL) is not available"; exit 1; }
 
-screen:
-	screen $(SERIAL) $(BAUDRATE)
+monitor:
+	picocom -b $(BAUDRATE) --imap lfcrlf $(SERIAL)

@@ -34,6 +34,7 @@
               arduino-cli
               git
               gnumake
+              picocom
               python3
             ];
             shellHook = ''
