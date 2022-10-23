@@ -22,11 +22,31 @@
 ■ Battery powered glue gun: http://geni.us/BoschBatteryGlueGun
 ■ Battery powered soldering iron: http://bit.ly/SealeySDL6
 
-* 2022-10-22   2022-10-21  
+
  * Modified by @SFrijters for use with a different soil moisture sensor and make the code more chatty.
  *
  * Moisture sensor: https://www.az-delivery.de/nl/products/bodenfeuchte-sensor-modul-v1-2
  */
+
+/*
+  Wiring schema:
+
+  Level sensor:
+  * GND  -> black/white   -> ProtoBreadboard -   -> Nano GND
+  * VCC  -> red/white     -> ProtoBreadboard a18 -> Nano 5V
+  * AOUT -> green/black   -> ProtoBreadboard a11 -> Nano A1
+
+  Moisture sensor:
+  * GND  -> green/white   -> ProtoBreadboard -   -> Nano GND
+  * VCC  -> red/dark blue -> ProtoBreadboard a18 -> Nano 5V
+  * AOUT -> gray/white    -> ProtoBreadboard a10 -> Nano A0
+
+  Led:
+  * +/-  -> black/white
+  * +/-  -> red/light blue
+
+  Water reservoir holds 5 dl
+*/
 
 // These constants won't change. They're used to give names to the pins used:
 const int ledPin = 2;                              // Digital output pin that the LED is attached to
