@@ -83,8 +83,8 @@ const long timeToPump_ms = 7000;                   // How long the pump should p
 const long timeToAllowMoistureSpread_ms = 30000;   // How long moisture is allowed to spread in the soil after pumping
 
 // Sleeping
-const unsigned long cycleInterval_ms = 36000000;   // Cycle is one hour
-const unsigned long sleepInterval_ms = 60000;      // Time to wait aftr checking the cycle is one minute
+const unsigned long cycleInterval_ms = 36000000;   // Sleep cycle is one hour
+const unsigned long sleepInterval_ms = 60000;      // Devided into sleep intervals of one minute
 
 // END CONFIGURATION
 
@@ -300,9 +300,10 @@ void loop() {
     Serial.println("Water level and moisture okay, entering a waiting cycle");
     // https://www.baldengineer.com/arduino-how-do-you-reset-millis.html
     const unsigned long diffMillis = (unsigned long)(millis() - lastMillis);
-    while (diffMillis < cycleInterval_ms) {
+    const unsigned long realCycleInterval_ms = cycleInterval_ms > sleepInterval_ms ? cycleInterval_ms : sleepInterval_ms;
+    while (diffMillis < realCycleInterval_ms) {
         Serial.print("\r  ");
-        Serial.print(cycleInterval_ms - diffMillis);
+        Serial.print(realCycleInterval_ms - diffMillis);
         Serial.print(" milliseconds remaining in waiting cycle (");
         Serial.print(sleepInterval_ms);
         Serial.print(" milliseconds sleep)");
