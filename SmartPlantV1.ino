@@ -297,17 +297,19 @@ void loop() {
     // If everything is (finally) okay, sleep for a while
     Serial.println("");
     Serial.println("==> Starting waiting loop");
-    Serial.println("Water level and moisture okay, entering a waiting cycle");
+    Serial.println("Water level and moisture level okay, entering a waiting cycle");
     // https://www.baldengineer.com/arduino-how-do-you-reset-millis.html
-    const unsigned long diffMillis = (unsigned long)(millis() - lastMillis);
-    const unsigned long realCycleInterval_ms = cycleInterval_ms > sleepInterval_ms ? cycleInterval_ms : sleepInterval_ms;
-    while (diffMillis < realCycleInterval_ms) {
+    unsigned long diffMillis = (unsigned long)(millis() - lastMillis);
+    while (diffMillis < cycleInterval_ms) {
         Serial.print("\r  ");
-        Serial.print(realCycleInterval_ms - diffMillis);
+        Serial.print(cycleInterval_ms - diffMillis);
         Serial.print(" milliseconds remaining in waiting cycle (");
-        Serial.print(sleepInterval_ms);
+        const unsigned long realSleepInterval_ms =
+            (cycleInterval_ms - diffMillis) < sleepInterval_ms ? (cycleInterval_ms - diffMillis) : sleepInterval_ms;
+        Serial.print(realSleepInterval_ms);
         Serial.print(" milliseconds sleep)");
-        delay(sleepInterval_ms);
+        delay(realSleepInterval_ms);
+        diffMillis = (unsigned long)(millis() - lastMillis);
     }
     lastMillis = millis();
     Serial.println("");
