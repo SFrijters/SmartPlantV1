@@ -67,10 +67,10 @@ const int timesStartupFlash = 5;                   // How often the LED will fla
 const long timeStartupFlash_ms = 600;              // How long a LED flash cycle at startup lasts
 
 // Water level and LED
-const int waterLevelSensorMinValue = 770;           // The value that the water level sensor returns when it is (almost) dry - at least no longer submerged but maybe still drying in the air
+const int waterLevelSensorMinValue = 770;          // The value that the water level sensor returns when it is (almost) dry - at least no longer submerged but maybe still drying in the air
 const int waterLevelSensorMaxValue = 376;          // The value that the water level sensor returns when it is fully submerged
 const int waterLevelWarningPercentThreshold = 80;  // Threshold at which we flash the LED to warn you of a low water level in the pump tank
-const int waterLevelStopPumpPercentThreshold = 77;  // Threshold at which we stop trying to pump water
+const int waterLevelStopPumpPercentThreshold = 77; // Threshold at which we stop trying to pump water
 const int timesWaterLevelWarningFlash = 5;         // How often the LED will flash to tell us the water tank needs topping up
 const long timeWaterLevelWarningFlash_ms = 2000;   // How long a LED flash cycle to warn about an empty reservoir lasts
 const int timesWaterLevelStopPumpFlash = 5;        // How often the LED will flash to tell us the water tank needs topping up
@@ -79,9 +79,9 @@ const long timeWaterLevelStopPumpFlash_ms = 200;   // How long a LED flash cycle
 // Soil moisture and pump
 const int moistureSensorAirValue = 801;            // When it is dried and held in air, it's the minimum moisture
 const int moistureSensorWaterValue = 335;          // When it is submerged in water, it's the maximum moisture
-const int moistureSoilPercentThreshold = 50;        // At which soil moisture percentage the pump should be activated
+const int moistureSoilPercentThreshold = 80;       // At which soil moisture percentage the pump should be activated
 const long timeToPump_ms = 4000;                   // How long the pump should pump water for when the plant needs it
-const long timeToAllowMoistureSpread_ms = 25000;    // How long moisture is allowed to spread in the soil after pumping
+const long timeToAllowMoistureSpread_ms = 25000;   // How long moisture is allowed to spread in the soil after pumping
 
 // Sleeping
 const unsigned long cycleInterval_ms = 36000000;   // Cycle is one hour
@@ -107,13 +107,15 @@ void setup() {
     // Set the BAUD rate
     Serial.begin(9600);
 
-    Serial.print("Generated from ");
+    Serial.println("");
+    Serial.println("==> Starting up");
+    Serial.print("  Generated from ");
     Serial.println(PROVENANCE);
 #ifdef POT_NAME
-    Serial.println("Pot ");
-    Serial.println(POT_NAME);
+    Serial.print("  Pot name '");
+    Serial.print(POT_NAME);
+    Serial.println("'");
 #endif
-    Serial.println("Starting up");
 
     // Set the operational mode for the pins
     pinMode(ledPin, OUTPUT);
@@ -123,7 +125,7 @@ void setup() {
 
     lastMillis = millis();
 
-    Serial.println("Pins set");
+    Serial.println("  Pins set");
 
     // Flash the LED five times to confirm power on and operation of code:
     for (int i = 0; i < timesStartupFlash; i++) {
@@ -136,7 +138,7 @@ void setup() {
     // Turn the LED on
     digitalWrite(ledPin, HIGH);
 
-    Serial.println("Startup done");
+    Serial.println("  Startup done");
 }
 
 void readWaterLevelPercent() {
@@ -270,6 +272,8 @@ void doThings() {
 
 void loop() {
     // Keep interacting with the pot until were are in a stable state
+    Serial.println("");
+    Serial.println("==> Starting pot interaction loop");
     _programState = activeState;
     while (_programState != okState) {
         doThings();
@@ -278,14 +282,16 @@ void loop() {
     // If everything is (finally) okay, sleep for a while
     // NOTE: This will overflow after ~50 days but I don't care.
     // https://www.arduino.cc/reference/en/language/functions/time/millis/
+    Serial.println("");
+    Serial.println("==> Starting waiting loop");
     Serial.println("Water level and moisture okay, entering a waiting cycle");
     while (millis() - lastMillis < cycleInterval_ms) {
         Serial.print("  ");
         Serial.print(cycleInterval_ms - (millis() - lastMillis));
         Serial.println(" milliseconds remaining in waiting cycle");
-        Serial.print("    Sleeping for ");
-        Serial.print(sleepInterval_ms);
-        Serial.println(" milliseconds");
+        /* Serial.print("    Sleeping for "); */
+        /* Serial.print(sleepInterval_ms); */
+        /* Serial.println(" milliseconds"); */
         delay(sleepInterval_ms);
     }
     lastMillis = millis();
