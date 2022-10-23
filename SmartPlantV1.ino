@@ -48,7 +48,7 @@
   Water reservoir holds 5 dl
 */
 
-#define POT_NAME "geelgrijs"
+#define POT_CONFIGURATION "geelgrijs"
 
 #ifdef GIT_VERSION
 #define PROVENANCE "file '" __FILE__ "' at git commit " GIT_VERSION
@@ -61,6 +61,9 @@ const int ledPin = 2;                              // Digital output pin that th
 const int pumpPin = 12;                            // Digital output pin that the water pump is attached to
 const int waterLevelPin = A1;                      // Analog pin water level sensor is connected to
 const int moistureSensorPin = A0;                  // Analog input pin used to check the moisture level of the soil
+
+// Default LED state
+const int defaultLedState = HIGH;
 
 // Startup
 const int timesStartupFlash = 5;                   // How often the LED will flash at startup
@@ -79,13 +82,13 @@ const long timeWaterLevelStopPumpFlash_ms = 200;   // How long a LED flash cycle
 // Soil moisture and pump
 const int moistureSensorAirValue = 801;            // When it is dried and held in air, it's the minimum moisture
 const int moistureSensorWaterValue = 335;          // When it is submerged in water, it's the maximum moisture
-const int moistureSoilPercentThreshold = 80;       // At which soil moisture percentage the pump should be activated
-const long timeToPump_ms = 4000;                   // How long the pump should pump water for when the plant needs it
-const long timeToAllowMoistureSpread_ms = 25000;   // How long moisture is allowed to spread in the soil after pumping
+const int moistureSoilPercentThreshold = 90;       // At which soil moisture percentage the pump should be activated
+const long timeToPump_ms = 7000;                   // How long the pump should pump water for when the plant needs it
+const long timeToAllowMoistureSpread_ms = 30000;   // How long moisture is allowed to spread in the soil after pumping
 
 // Sleeping
 const unsigned long cycleInterval_ms = 36000000;   // Cycle is one hour
-const unsigned long sleepInterval_ms = 10000;      // Time to wait aftr checking the cycle is 10 seconds.
+const unsigned long sleepInterval_ms = 60000;      // Time to wait aftr checking the cycle is one minute
 
 int waterLevelSensorValue = 0;  // Somewhere to store the value read from the waterlevel sensor
 int waterLevelPercent = 0;
@@ -109,15 +112,16 @@ void setup() {
 
     Serial.println("");
     Serial.println("==> Starting up");
-    Serial.print("  Generated from ");
+    Serial.print("  Source: ");
     Serial.println(PROVENANCE);
-#ifdef POT_NAME
-    Serial.print("  Pot name '");
-    Serial.print(POT_NAME);
+#ifdef POT_CONFIGURATION
+    Serial.print("  Configured for pot: '");
+    Serial.print(POT_CONFIGURATION);
     Serial.println("'");
 #endif
 
     // Set the operational mode for the pins
+    Serial.println("Setting pin modes");
     pinMode(ledPin, OUTPUT);
     pinMode(pumpPin, OUTPUT);
     pinMode(waterLevelPin, INPUT);
@@ -127,6 +131,8 @@ void setup() {
 
     Serial.println("  Pins set");
 
+
+    Serial.println("Flashing LEDs");
     // Flash the LED five times to confirm power on and operation of code:
     for (int i = 0; i < timesStartupFlash; i++) {
         digitalWrite(ledPin, HIGH);
@@ -134,11 +140,12 @@ void setup() {
         digitalWrite(ledPin, LOW);
         delay(timeStartupFlash_ms / 2);
     }
+    Serial.println("  Flashing done");
 
-    // Turn the LED on
-    digitalWrite(ledPin, HIGH);
+    // Set the LED to its default state
+    digitalWrite(ledPin, defaultLedState);
 
-    Serial.println("  Startup done");
+    Serial.println("Startup done");
 }
 
 void readWaterLevelPercent() {
@@ -168,9 +175,9 @@ void doWaterLevelStopPump() {
     Serial.println("%");
     Serial.println("  Water level too low, refusing to pump, blinking to get your attention");
     for (int i = 0; i < timesWaterLevelStopPumpFlash; i++) {
-        digitalWrite(ledPin, LOW);
+        digitalWrite(ledPin, !defaultLedState);
         delay(timeWaterLevelStopPumpFlash_ms / 2);
-        digitalWrite(ledPin, HIGH);
+        digitalWrite(ledPin, defaultLedState);
         delay(timeWaterLevelStopPumpFlash_ms / 2);
     }
 }
@@ -181,9 +188,9 @@ void doWaterLevelWarning() {
     Serial.println("%");
     Serial.println("  Water level getting low, blinking to get your attention");
     for (int i = 0; i < timesWaterLevelWarningFlash; i++) {
-        digitalWrite(ledPin, LOW);
+        digitalWrite(ledPin, !defaultLedState);
         delay(timeWaterLevelWarningFlash_ms / 2);
-        digitalWrite(ledPin, HIGH);
+        digitalWrite(ledPin, defaultLedState);
         delay(timeWaterLevelWarningFlash_ms / 2);
     }
 }
@@ -280,21 +287,21 @@ void loop() {
     }
 
     // If everything is (finally) okay, sleep for a while
-    // NOTE: This will overflow after ~50 days but I don't care.
-    // https://www.arduino.cc/reference/en/language/functions/time/millis/
     Serial.println("");
     Serial.println("==> Starting waiting loop");
     Serial.println("Water level and moisture okay, entering a waiting cycle");
-    while (millis() - lastMillis < cycleInterval_ms) {
-        Serial.print("  ");
-        Serial.print(cycleInterval_ms - (millis() - lastMillis));
-        Serial.println(" milliseconds remaining in waiting cycle");
-        /* Serial.print("    Sleeping for "); */
-        /* Serial.print(sleepInterval_ms); */
-        /* Serial.println(" milliseconds"); */
+    // https://www.baldengineer.com/arduino-how-do-you-reset-millis.html
+    const unsigned long diffMillis = (unsigned long)(millis() - lastMillis);
+    while (diffMillis < cycleInterval_ms) {
+        Serial.print("\r  ");
+        Serial.print(cycleInterval_ms - diffMillis);
+        Serial.print(" milliseconds remaining in waiting cycle (");
+        Serial.print(sleepInterval_ms);
+        Serial.print(" milliseconds sleep)");
         delay(sleepInterval_ms);
     }
     lastMillis = millis();
+    Serial.println("");
 }
 
 // Local Variables:
