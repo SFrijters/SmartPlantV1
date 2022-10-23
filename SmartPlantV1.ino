@@ -83,7 +83,7 @@ const long timeToPump_ms = 7000;                   // How long the pump should p
 const long timeToAllowMoistureSpread_ms = 30000;   // How long moisture is allowed to spread in the soil after pumping
 
 // Sleeping
-const unsigned long cycleInterval_ms = 36000000;   // Sleep cycle is one hour
+const unsigned long cycleInterval_ms = 3600000;    // Sleep cycle is one hour
 const unsigned long sleepInterval_ms = 60000;      // Devided into sleep intervals of one minute
 
 // END CONFIGURATION
