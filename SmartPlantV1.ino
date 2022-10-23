@@ -28,6 +28,28 @@
  * Moisture sensor: https://www.az-delivery.de/nl/products/bodenfeuchte-sensor-modul-v1-2
  */
 
+/*
+  Wiring schema:
+
+  Level sensor:
+  * GND  -> black/white   -> ProtoBreadboard -   -> Nano GND
+  * VCC  -> red/white     -> ProtoBreadboard a18 -> Nano 5V
+  * AOUT -> green/black   -> ProtoBreadboard a11 -> Nano A1
+
+  Moisture sensor:
+  * GND  -> green/white   -> ProtoBreadboard -   -> Nano GND
+  * VCC  -> red/dark blue -> ProtoBreadboard a18 -> Nano 5V
+  * AOUT -> gray/white    -> ProtoBreadboard a10 -> Nano A0
+
+  Led:
+  * +/-  -> black/white
+  * +/-  -> red/light blue
+
+  Water reservoir holds 5 dl
+*/
+
+#define POT_NAME "geelgrijs"
+
 #ifdef GIT_VERSION
 #define PROVENANCE "file '" __FILE__ "' at git commit " GIT_VERSION
 #else
@@ -37,7 +59,7 @@
 // These constants won't change. They're used to give names to the pins used:
 const int ledPin = 2;                              // Digital output pin that the LED is attached to
 const int pumpPin = 12;                            // Digital output pin that the water pump is attached to
-const int waterLevelPin = A3;                      // Analog pin water level sensor is connected to
+const int waterLevelPin = A1;                      // Analog pin water level sensor is connected to
 const int moistureSensorPin = A0;                  // Analog input pin used to check the moisture level of the soil
 
 // Startup
@@ -45,21 +67,21 @@ const int timesStartupFlash = 5;                   // How often the LED will fla
 const long timeStartupFlash_ms = 600;              // How long a LED flash cycle at startup lasts
 
 // Water level and LED
-const int waterLevelSensorMinValue = 30;           // The value that the water level sensor returns when it is (almost) dry - at least no longer submerged but maybe still drying in the air
-const int waterLevelSensorMaxValue = 133;          // The value that the water level sensor returns when it is fully submerged
-const int waterLevelWarningPercentThreshold = 25;  // Threshold at which we flash the LED to warn you of a low water level in the pump tank
-const int waterLevelStopPumpPercentThreshold = 5;  // Threshold at which we stop trying to pump water
+const int waterLevelSensorMinValue = 770;           // The value that the water level sensor returns when it is (almost) dry - at least no longer submerged but maybe still drying in the air
+const int waterLevelSensorMaxValue = 376;          // The value that the water level sensor returns when it is fully submerged
+const int waterLevelWarningPercentThreshold = 80;  // Threshold at which we flash the LED to warn you of a low water level in the pump tank
+const int waterLevelStopPumpPercentThreshold = 77;  // Threshold at which we stop trying to pump water
 const int timesWaterLevelWarningFlash = 5;         // How often the LED will flash to tell us the water tank needs topping up
 const long timeWaterLevelWarningFlash_ms = 2000;   // How long a LED flash cycle to warn about an empty reservoir lasts
 const int timesWaterLevelStopPumpFlash = 5;        // How often the LED will flash to tell us the water tank needs topping up
 const long timeWaterLevelStopPumpFlash_ms = 200;   // How long a LED flash cycle to warn about an empty reservoir lasts
 
 // Soil moisture and pump
-const int moistureSensorAirValue = 450;            // When it is dried and held in air, it's the minimum moisture
-const int moistureSensorWaterValue = 120;          // When it is submerged in water, it's the maximum moisture
-const int moistureSoilPercentThreshold = 5;        // At which soil moisture percentage the pump should be activated
-const long timeToPump_ms = 2500;                   // How long the pump should pump water for when the plant needs it
-const long timeToAllowMoistureSpread_ms = 2000;    // How long moisture is allowed to spread in the soil after pumping
+const int moistureSensorAirValue = 801;            // When it is dried and held in air, it's the minimum moisture
+const int moistureSensorWaterValue = 335;          // When it is submerged in water, it's the maximum moisture
+const int moistureSoilPercentThreshold = 50;        // At which soil moisture percentage the pump should be activated
+const long timeToPump_ms = 4000;                   // How long the pump should pump water for when the plant needs it
+const long timeToAllowMoistureSpread_ms = 25000;    // How long moisture is allowed to spread in the soil after pumping
 
 // Sleeping
 const unsigned long cycleInterval_ms = 36000000;   // Cycle is one hour
@@ -87,6 +109,10 @@ void setup() {
 
     Serial.print("Generated from ");
     Serial.println(PROVENANCE);
+#ifdef POT_NAME
+    Serial.println("Pot ");
+    Serial.println(POT_NAME);
+#endif
     Serial.println("Starting up");
 
     // Set the operational mode for the pins
@@ -252,8 +278,12 @@ void loop() {
     // If everything is (finally) okay, sleep for a while
     // NOTE: This will overflow after ~50 days but I don't care.
     // https://www.arduino.cc/reference/en/language/functions/time/millis/
+    Serial.println("Water level and moisture okay, entering a waiting cycle");
     while (millis() - lastMillis < cycleInterval_ms) {
-        Serial.print("Sleeping for ");
+        Serial.print("  ");
+        Serial.print(cycleInterval_ms - (millis() - lastMillis));
+        Serial.println(" milliseconds remaining in waiting cycle");
+        Serial.print("    Sleeping for ");
         Serial.print(sleepInterval_ms);
         Serial.println(" milliseconds");
         delay(sleepInterval_ms);
