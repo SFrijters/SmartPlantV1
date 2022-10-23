@@ -204,7 +204,7 @@ void doWaterLevelWarning() {
 }
 
 void doWaterLevelOk() {
-    Serial.print(" > ");
+    Serial.print(" >= ");
     Serial.print(waterLevelWarningPercentThreshold);
     Serial.println("%");
     Serial.println("  Water level okay");
@@ -250,7 +250,7 @@ void doPumpWater() {
 }
 
 void doNotPumpWater() {
-    Serial.print(" > ");
+    Serial.print(" >= ");
     Serial.print(moistureSoilPercentThreshold);
     Serial.println("%");
 }
