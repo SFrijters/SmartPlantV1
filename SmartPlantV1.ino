@@ -48,13 +48,9 @@
   Water reservoir holds 5 dl
 */
 
-#define POT_CONFIGURATION "geelgrijs"
+// START CONFIGURATION
 
-#ifdef GIT_VERSION
-#define PROVENANCE "file '" __FILE__ "' at git commit " GIT_VERSION
-#else
-#define PROVENANCE "file '" __FILE__ "'"
-#endif
+#define POT_CONFIGURATION "geelgrijs"
 
 // These constants won't change. They're used to give names to the pins used:
 const int ledPin = 2;                              // Digital output pin that the LED is attached to
@@ -90,12 +86,15 @@ const long timeToAllowMoistureSpread_ms = 30000;   // How long moisture is allow
 const unsigned long cycleInterval_ms = 36000000;   // Cycle is one hour
 const unsigned long sleepInterval_ms = 60000;      // Time to wait aftr checking the cycle is one minute
 
-int waterLevelSensorValue = 0;  // Somewhere to store the value read from the waterlevel sensor
-int waterLevelPercent = 0;
-int moistureSensorValue = 0;    // Somewhere to store the value read from the soil moisture sensor
-int moistureSoilPercent = 0;
+// END CONFIGURATION
 
-unsigned long lastMillis;
+// START GLOBAL VARIABLES
+
+#ifdef GIT_VERSION
+#define PROVENANCE "file '" __FILE__ "' at git commit " GIT_VERSION
+#else
+#define PROVENANCE "file '" __FILE__ "'"
+#endif
 
 typedef enum {
   okState,
@@ -105,6 +104,15 @@ typedef enum {
 } programState;
 
 programState _programState = okState;
+
+int waterLevelSensorValue = 0;  // Somewhere to store the value read from the waterlevel sensor
+int waterLevelPercent = 0;
+int moistureSensorValue = 0;    // Somewhere to store the value read from the soil moisture sensor
+int moistureSoilPercent = 0;
+
+unsigned long lastMillis;
+
+// END GLOBAL VARIABLES
 
 void setup() {
     // Set the BAUD rate
