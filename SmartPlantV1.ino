@@ -72,8 +72,8 @@ const int timesStartupFlash = 5;                   // How often the LED will fla
 const long timeStartupFlash_ms = 600;              // How long a LED flash cycle at startup lasts
 
 // Water level and LED
-const int waterLevelSensorMinValue = 770;          // The value that the water level sensor returns when it is (almost) dry - at least no longer submerged but maybe still drying in the air
-const int waterLevelSensorMaxValue = 376;          // The value that the water level sensor returns when it is fully submerged
+const int waterLevelSensorEmptyValue = 770;        // The value that the water level sensor returns when it is (almost) dry - at least no longer submerged but maybe still drying in the air
+const int waterLevelSensorFullValue = 376;         // The value that the water level sensor returns when it is fully submerged
 const int waterLevelWarningPercentThreshold = 80;  // Threshold at which we flash the LED to warn you of a low water level in the pump tank
 const int waterLevelStopPumpPercentThreshold = 77; // Threshold at which we stop trying to pump water
 const int timesWaterLevelWarningFlash = 5;         // How often the LED will flash to tell us the water tank needs topping up
@@ -82,9 +82,9 @@ const int timesWaterLevelStopPumpFlash = 5;        // How often the LED will fla
 const long timeWaterLevelStopPumpFlash_ms = 200;   // How long a LED flash cycle to warn about an empty reservoir lasts
 
 // Soil moisture and pump
-const int moistureSensorAirValue = 801;            // When it is dried and held in air, it's the minimum moisture
-const int moistureSensorWaterValue = 335;          // When it is submerged in water, it's the maximum moisture
-const int moistureSoilPercentThreshold = 90;       // At which soil moisture percentage the pump should be activated
+const int moistureSensorDryValue = 801;            // When it is dried and held in air, it's the minimum moisture
+const int moistureSensorWetValue = 335;            // When it is submerged in water, it's the maximum moisture
+const int moistureSoilPercentThreshold = 30;       // At which soil moisture percentage the pump should be activated
 const long timeToPump_ms = 7000;                   // How long the pump should pump water for when the plant needs it
 const long timeToAllowMoistureSpread_ms = 30000;   // How long moisture is allowed to spread in the soil after pumping
 
@@ -169,7 +169,7 @@ void readWaterLevelPercent() {
     Serial.println("Reading water level");
     waterLevelSensorValue = analogRead(waterLevelPin);
     waterLevelPercent = map(waterLevelSensorValue,
-                            waterLevelSensorMinValue, waterLevelSensorMaxValue,
+                            waterLevelSensorEmptyValue, waterLevelSensorFullValue,
                             0, 100);
 
     // Set waterLevelPercent to minimum 0% and maximum 100%
@@ -223,7 +223,7 @@ void readMoistureSoilPercent() {
     Serial.println("Reading moisture level");
     moistureSensorValue = analogRead(moistureSensorPin);
     moistureSoilPercent = map(moistureSensorValue,
-                              moistureSensorAirValue, moistureSensorWaterValue,
+                              moistureSensorDryValue, moistureSensorWetValue,
                               0, 100);
     // Set moistureSoilPercent to minimum 0% and maximum 100%
     if (moistureSoilPercent > 100) {
