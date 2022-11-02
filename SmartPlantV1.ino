@@ -58,8 +58,14 @@ const int pumpPin = 12;                            // Digital output pin that th
 const int waterLevelPin = A1;                      // Analog pin water level sensor is connected to
 const int moistureSensorPin = A0;                  // Analog input pin used to check the moisture level of the soil
 
+typedef enum {
+    ledBaseLow,
+    ledBaseHigh,
+    ledBaseHighAfterPump,
+} ledBaseStateType;
+
 // Default LED state
-const int defaultLedState = HIGH;
+const ledBaseStateType defaultLedBaseStateType = ledBaseHighAfterPump;
 
 // Startup
 const int timesStartupFlash = 5;                   // How often the LED will flash at startup
@@ -104,6 +110,8 @@ typedef enum {
 } programState;
 
 programState _programState = okState;
+
+int _ledBaseState = LOW;
 
 int waterLevelSensorValue = 0;  // Somewhere to store the value read from the waterlevel sensor
 int waterLevelPercent = 0;
@@ -150,8 +158,9 @@ void setup() {
     }
     Serial.println("  Flashing done");
 
-    // Set the LED to its default state
-    digitalWrite(ledPin, defaultLedState);
+    // Set the LED to its initial default state
+    _ledBaseState = defaultLedBaseStateType == ledBaseHigh ? HIGH : LOW;
+    digitalWrite(ledPin, _ledBaseState);
 
     Serial.println("Startup done");
 }
@@ -183,9 +192,9 @@ void doWaterLevelStopPump() {
     Serial.println("%");
     Serial.println("  Water level too low, refusing to pump, blinking to get your attention");
     for (int i = 0; i < timesWaterLevelStopPumpFlash; i++) {
-        digitalWrite(ledPin, !defaultLedState);
+        digitalWrite(ledPin, !_ledBaseState);
         delay(timeWaterLevelStopPumpFlash_ms / 2);
-        digitalWrite(ledPin, defaultLedState);
+        digitalWrite(ledPin, _ledBaseState);
         delay(timeWaterLevelStopPumpFlash_ms / 2);
     }
 }
@@ -196,9 +205,9 @@ void doWaterLevelWarning() {
     Serial.println("%");
     Serial.println("  Water level getting low, blinking to get your attention");
     for (int i = 0; i < timesWaterLevelWarningFlash; i++) {
-        digitalWrite(ledPin, !defaultLedState);
+        digitalWrite(ledPin, !_ledBaseState);
         delay(timeWaterLevelWarningFlash_ms / 2);
-        digitalWrite(ledPin, defaultLedState);
+        digitalWrite(ledPin, _ledBaseState);
         delay(timeWaterLevelWarningFlash_ms / 2);
     }
 }
@@ -247,6 +256,12 @@ void doPumpWater() {
     Serial.print(timeToAllowMoistureSpread_ms);
     Serial.println(" milliseconds");
     delay(timeToAllowMoistureSpread_ms);
+
+    if (defaultLedBaseStateType == ledBaseHighAfterPump && _ledBaseState != HIGH) {
+        Serial.println("    Setting base LED state to HIGH");
+        _ledBaseState = HIGH;
+        digitalWrite(ledPin, _ledBaseState);
+    }
 }
 
 void doNotPumpWater() {
