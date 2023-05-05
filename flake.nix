@@ -27,20 +27,20 @@
           export ARDUINO_DIRECTORIES_DOWNLOADS=$_ARDUINO_ROOT/staging
         '';
 
-        devShellArduinoCLI =
-          pkgs.mkShell ({
-            name = "${name}-dev";
-            packages = with pkgs; [
-              arduino-cli
-              git
-              gnumake
-              picocom
-            ];
-            shellHook = ''
-              ${arduinoShellHookPaths}
-              echo "==> Storing arduino-cli data in $_ARDUINO_ROOT"
-            '';
-          });
+        devShellArduinoCLI = pkgs.mkShell {
+          name = "${name}-dev";
+          packages = with pkgs; [
+            arduino-cli
+            git
+            gnumake
+            picocom
+          ];
+          shellHook = ''
+            ${arduinoShellHookPaths}
+            echo "==> Using arduino-cli version $(arduino-cli version)"
+            echo "    Storing arduino-cli data for this project in '$_ARDUINO_ROOT'"
+          '';
+        };
 
       in
         rec {
