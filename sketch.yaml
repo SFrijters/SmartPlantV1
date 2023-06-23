@@ -2,5 +2,5 @@ profiles:
   SmartPlantV1:
     fqbn: arduino:avr:nano
     platforms:
-      - platform: arduino:avr (1.8.5)
+      - platform: arduino:avr (1.8.6)
     libraries:
